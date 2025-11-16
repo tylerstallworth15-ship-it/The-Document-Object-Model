@@ -8,23 +8,24 @@ const titleInput = document.getElementById('post-title');
 const contentInput= document.getElementById('post-content');
 const titleError = document.getElementById('title-error');
 const contentError = document.getElementById('content-error');
-const postsContiner = document.getElementById('posts-container');
+const postsContainer = document.getElementById('posts-container');
 const submitBtn = document.getElementById('submit-btn');
 const cancelEditBtn = document.getElementById('cancel-edit-btn');
 
 function loadPostsFromLocalStorage() {
     const storedPosts = localStorage.getItem('blogPosts');
+
     if (storedPosts) {
         try {
             posts = JSON.parse(storedPosts);
-          } catch (error) {
+        } catch (error) {
             console.error('Error parsing posts LocalStorage', error);
             posts = [];
-          }
-         } else {
-            posts = [];
         }
+    } else {
+        posts = [];
     }
+}
 
 function savePostsToLocalStorage() {
     localStorage.setItem('blogPosts', JSON.stringify(posts));
@@ -44,7 +45,7 @@ function clearErrors() {
     contentError.textContent = '';
 }
 
-function resetFrom() {
+function resetForm() {
     postForm.reset();
     clearErrors();
     editingPostId = null;
@@ -53,9 +54,9 @@ function resetFrom() {
 }
 
 function renderPosts() {
-    postsContiner.innerHTML = '';
+    postsContainer.innerHTML = '';
     if (posts.length === 0) {
-        postsContiner.innerHTML = '<p>No posts yet. Start by adding a new one above!</p>';
+        postsContainer.innerHTML = '<p>No posts yet. Start by adding a new one above!</p>';
         return;
     }
 
@@ -97,7 +98,7 @@ function renderPosts() {
         postDiv.appendChild(contentEl);
         postDiv.appendChild(actionsDiv);
 
-        postsContiner.appendChild(postDiv);
+        postsContainer.appendChild(postDiv);
       });
 }
 
@@ -123,9 +124,11 @@ function validateForm() {
 
 function handleFormSubmit(event) {
     event.preventDefault();
+    console.log("handleFormSubmit");
 
     if (!validateForm()) {
         return;
+    
     }
 
     const titleValue = titleInput.value.trim();
@@ -144,11 +147,76 @@ function handleFormSubmit(event) {
 
         savePostsToLocalStorage();
         renderPosts();
-        resetFrom();
+        resetForm();
     } else {
 
-        const newPost= 
+        const newPost = {
+            id: generatePostId(),
+            title: titleValue,
+            content: contentValue,
+            timestamp: Date.now()
+        };
+
+        posts.push(newPost);
+        savePostsToLocalStorage();
+        renderPosts();
+        resetForm();
     }
 }
 
+    function handlePostsContainerClick(event) {
+        const target = event.target;
+    
 
+        if (target.classList.contains('delete-btn')) {
+            const postId = target.getAttribute('data-id');
+            deletePost(postId);
+        }
+
+        if (target.classList.contains('edit-btn')) {
+        const postId = target.getAttribute('data-id');
+        startEditingPost(postId);
+        }
+}
+
+
+function deletePost(postId) {
+    posts = posts.filter(function (post) {
+        return post.id !== postId;
+    });
+
+    savePostsToLocalStorage();
+    renderPosts();
+}
+
+function startEditingPost(postId) {
+    const postToEdit = posts.find(function (post) {
+        return post.id == postId;
+    });
+
+    if (!postToEdit) return;
+
+    editingPostId = postToEdit.id;
+
+    titleInput.value = postToEdit.title;
+    contentInput.value = postToEdit.content;
+
+    submitBtn.textContent = 'Update Post';
+    cancelEditBtn.style.display = 'inline-block';
+
+    clearErrors();
+}
+
+
+function handleCancelEdit() {
+    resetForm();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    loadPostsFromLocalStorage();
+    renderPosts();
+});
+
+postForm.addEventListener('submit', handleFormSubmit);
+postsContainer.addEventListener('click', handlePostsContainerClick);
+cancelEditBtn.addEventListener('click', handleCancelEdit);
